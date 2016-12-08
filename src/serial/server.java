@@ -24,8 +24,8 @@ public class server implements Runnable {
 	public void run() {
 		try{
 			Chunk d = null;
-			InputStream o = soc.getInputStream();
-			ObjectInput s = new ObjectInputStream(o);
+			InputStream o =null;
+			ObjectInput s = null;
 			File carpeta = new File("./folderRec");
 			if (!carpeta.exists()) {
 				carpeta.mkdirs();
@@ -36,6 +36,8 @@ public class server implements Runnable {
 			}
 			FileOutputStream fos=null;
 			while (true) {
+				o = soc.getInputStream();
+				s = new ObjectInputStream(o);
 				try{
 				d = (Chunk) s.readObject();
 				
@@ -43,6 +45,8 @@ public class server implements Runnable {
 					fos = new FileOutputStream("./folderRec/" + d.getNombre());
 					fos.write(d.getInfo());
 					fos.close();
+
+					
 					
 				}catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block

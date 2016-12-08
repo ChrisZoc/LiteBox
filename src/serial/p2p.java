@@ -101,7 +101,7 @@ public class p2p {
 			public void run() {
 		ServerSocket ser = null;
         server rt;
-		try { ser = new ServerSocket(60003);} 
+		try { ser = new ServerSocket(60020);} 
         catch (IOException e) 
         {
             System.err.println("Could not listen on port: 4443.");
