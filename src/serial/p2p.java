@@ -20,6 +20,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class p2p {
 
@@ -36,8 +38,6 @@ public class p2p {
 				try {
 					// Create a socket
 					Socket soc = new Socket(InetAddress.getLocalHost(), 60020);
-					OutputStream o = soc.getOutputStream();
-					ObjectOutput s = new ObjectOutputStream(o);
 					File carpeta = new File("./folderSend");
 					Chunk test = new Chunk();
 					File archivo = null;
@@ -58,6 +58,9 @@ public class p2p {
 						System.out.println("-" + ficheros[i]);
 					}
 					while (true) {
+						soc=new Socket(InetAddress.getLocalHost(), 60020);
+						OutputStream o = soc.getOutputStream();
+						ObjectOutput s = new ObjectOutputStream(o);
 						while (true) {
 							newFicheros = carpeta.list();
 							if (ficheros.length != newFicheros.length) {
@@ -79,7 +82,7 @@ public class p2p {
 						test.setId(0);
 						s.writeObject(test);
 						System.out.println("the file '" + newFicherosArr.get(0) + "' has been sent\n");
-
+						//soc.close();
 						s.flush();
 						// s.close();
 						ficheros = newFicheros;
@@ -99,34 +102,25 @@ public class p2p {
 
 			@Override
 			public void run() {
-		ServerSocket ser = null;
-        server rt;
-		try { ser = new ServerSocket(60020);} 
+		 
+		try { 
+	        //final ExecutorService service = Executors.newCachedThreadPool();
+			ServerSocket ser = new ServerSocket(60020);
+			while(true){
+	        	System.out.println("estoy escuchando");
+        	Socket clientSocket = ser.accept();
+        	
+            //service.execute(new server(clientSocket));
+        	server servidor= new server(clientSocket);
+        	Thread t = new Thread(servidor);
+        	t.start();
+        	System.out.println(clientSocket.isClosed());
+        	}}
         catch (IOException e) 
         {
-            System.err.println("Could not listen on port: 4443.");
+            System.err.println("Could not listen on port: 60021.");
             System.exit(1);
         }
-		
-		 Socket clientSocket = null;
-	        try 
-	        { 
-
-	            clientSocket = ser.accept();
-	            rt = new server(clientSocket);
-	        } 
-	        catch (IOException e)
-	        {
-	            System.err.println("Accept failed.");
-	            System.exit(1);
-	        }
-
-	        try {
-				ser.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 	        }
 			}).start();
 		}

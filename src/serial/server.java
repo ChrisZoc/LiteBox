@@ -10,22 +10,21 @@ import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class server implements Runnable {
-	Thread runner;
+public class server implements Runnable{
+	
 	Socket soc;
 
 	public server(Socket ss) {
-	runner= new Thread(this);
 	soc = ss;
-	runner.run();
 	}
 
-	@Override
+	
 	public void run() {
 		try{
+
 			Chunk d = null;
-			InputStream o =null;
-			ObjectInput s = null;
+			InputStream o = soc.getInputStream();
+			ObjectInput s = new ObjectInputStream(o);
 			File carpeta = new File("./folderRec");
 			if (!carpeta.exists()) {
 				carpeta.mkdirs();
@@ -35,23 +34,21 @@ public class server implements Runnable {
 				System.out.println("the shared folder it already exists ");
 			}
 			FileOutputStream fos=null;
-			while (true) {
-				o = soc.getInputStream();
-				s = new ObjectInputStream(o);
-				try{
+							try{
 				d = (Chunk) s.readObject();
 				
 					System.out.println("The file'" + d.getNombre() + "' has been Received ");
 					fos = new FileOutputStream("./folderRec/" + d.getNombre());
 					fos.write(d.getInfo());
 					fos.close();
+					
 
 					
 					
 				}catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}
+				
 			}
 			}catch (IOException e1) {
 				// TODO Auto-generated catch block
