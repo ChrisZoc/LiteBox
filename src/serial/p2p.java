@@ -1,13 +1,7 @@
 package serial;
 
-import java.awt.List;
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -18,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class p2p {
@@ -26,6 +19,15 @@ public class p2p {
 	public static void main(String args[]) throws IOException {
 		startServer();
 		startClient();
+	}
+
+	private static ArrayList<String> difference(String[] before, String[] after) {
+		ArrayList<String> b = new ArrayList<String>();
+		ArrayList<String> a = new ArrayList<String>();
+		Collections.addAll(b, before);
+		Collections.addAll(a, after);
+		a.removeAll(b);
+		return a;
 	}
 
 	private static void startClient() {
@@ -39,16 +41,13 @@ public class p2p {
 					OutputStream o = soc.getOutputStream();
 					ObjectOutput s = new ObjectOutputStream(o);
 					File carpeta = new File("./folderSend");
-					Chunk test = new Chunk();
-					File archivo = null;
-
+					Chunk test = null;
 					if (!carpeta.exists()) {
-
 						carpeta.mkdirs();
-						System.out.println("se creo la carpeta compartida");
+						System.out.println("No shared folder detected, creating.....Done!");
 
 					} else {
-						System.out.println("the folder folderSend it already exists");
+						System.out.println("Shared folder /folderSend/ detected.");
 					}
 
 					String[] ficheros = carpeta.list();
@@ -58,31 +57,39 @@ public class p2p {
 						System.out.println("-" + ficheros[i]);
 					}
 					while (true) {
-						while (true) {
-							newFicheros = carpeta.list();
-							if (ficheros.length != newFicheros.length) {
-								break;
-							}
-						}
-						System.out.println("Change detected in the folder......syncing");
-						ArrayList ficherosArr = new ArrayList();
-						ArrayList newFicherosArr = new ArrayList();
-						Collections.addAll(ficherosArr, ficheros);
-						Collections.addAll(newFicherosArr, newFicheros);
-						newFicherosArr.removeAll(ficherosArr);
-						System.out.println(newFicherosArr.get(0));
-						archivo = new File("./folderSend/" + newFicherosArr.get(0));
-						Path path = Paths.get("./folderSend/" + newFicherosArr.get(0));
-						byte[] data = Files.readAllBytes(path);
-						test.setInfo(data);
-						test.setNombre(String.valueOf(newFicherosArr.get(0)));
-						test.setId(0);
-						s.writeObject(test);
-						System.out.println("the file '" + newFicherosArr.get(0) + "' has been sent\n");
+						newFicheros = carpeta.list();
+						if (ficheros.length < newFicheros.length) { // new
+																	// file
+							System.out.println("Change detected in the folder......syncing");
+							ArrayList<String> newFicherosArr = difference(ficheros, newFicheros);
+							System.out.println(newFicherosArr.get(0));
+							Path path = Paths.get("./folderSend/" + newFicherosArr.get(0));
+							byte[] data = Files.readAllBytes(path);
+							test = new Chunk();
+							test.setInfo(data);
+							test.setName(String.valueOf(newFicherosArr.get(0)));
+							test.setId(0);
+							s.writeObject(test);
+							System.out.println("The file '" + newFicherosArr.get(0) + "' has been sent\n");
 
-						s.flush();
-						// s.close();
-						ficheros = newFicheros;
+							s.flush();
+							// s.close();
+							ficheros = newFicheros;
+						} else if (ficheros.length > newFicheros.length) { // delete
+																			// file
+							System.out.println("Change detected in the folder......syncing");
+							ArrayList<String> newFicherosArr = difference(newFicheros, ficheros);
+							System.out.println(newFicherosArr.get(0));
+							test = new Chunk();
+							test.setName(String.valueOf(newFicherosArr.get(0)));
+							test.setId(-1);
+							s.writeObject(test);
+							System.out.println("Petition to delete '" + newFicherosArr.get(0) + "' has been sent\n");
+
+							s.flush();
+							// s.close();
+							ficheros = newFicheros;
+						}
 					}
 
 				} catch (Exception e) {
@@ -94,41 +101,38 @@ public class p2p {
 		}).start();
 	}
 
-	private static void startServer() throws IOException{
+	private static void startServer() throws IOException {
 		(new Thread() {
 
 			@Override
 			public void run() {
-		ServerSocket ser = null;
-        server rt;
-		try { ser = new ServerSocket(60020);} 
-        catch (IOException e) 
-        {
-            System.err.println("Could not listen on port: 4443.");
-            System.exit(1);
-        }
-		
-		 Socket clientSocket = null;
-	        try 
-	        { 
+				ServerSocket ser = null;
+				ServerThread rt;
+				try {
+					ser = new ServerSocket(60020);
+				} catch (IOException e) {
+					System.err.println("Could not listen on port: 60020.");
+					System.exit(1);
+				}
 
-	            clientSocket = ser.accept();
-	            rt = new server(clientSocket);
-	        } 
-	        catch (IOException e)
-	        {
-	            System.err.println("Accept failed.");
-	            System.exit(1);
-	        }
+				Socket clientSocket = null;
+				try {
+					while (true) {
+						clientSocket = ser.accept();
+						rt = new ServerThread(clientSocket);
+					}
+				} catch (IOException e) {
+					System.err.println("Accept failed.");
+					System.exit(1);
+				}
 
-	        try {
-				ser.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try {
+					ser.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
-	        }
-			}).start();
-		}
+		}).start();
+	}
 }
-
