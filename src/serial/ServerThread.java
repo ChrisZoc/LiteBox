@@ -25,14 +25,6 @@ public class ServerThread implements Runnable {
 			Chunk d = null;
 			InputStream o = null;
 			ObjectInput s = null;
-			File carpeta = new File("./folderRec");
-			if (!carpeta.exists()) {
-				carpeta.mkdirs();
-				System.out.println("No shared folder detected, creating.....Done!");
-
-			} else {
-				System.out.println("Shared folder /folderRec/ detected.");
-			}
 			FileOutputStream fos = null;
 			o = soc.getInputStream();
 			s = new ObjectInputStream(o);
