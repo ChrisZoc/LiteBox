@@ -1,29 +1,31 @@
 package serial;
 
-import java.awt.List;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class p2p {
 
-	public static void main(String args[]) {
+	private static int port = 60020;
+
+	public static void main(String args[]) throws IOException {
 		startServer();
 		startClient();
+	}
+
+	private static ArrayList<String> difference(String[] before, String[] after) {
+		ArrayList<String> b = new ArrayList<String>();
+		ArrayList<String> a = new ArrayList<String>();
+		Collections.addAll(b, before);
+		Collections.addAll(a, after);
+		a.removeAll(b);
+		return a;
 	}
 
 	private static void startClient() {
@@ -31,108 +33,116 @@ public class p2p {
 
 			@Override
 			public void run() {
-				try {
-					// Create a socket
-					Socket soc = new Socket(InetAddress.getLocalHost(), 60020);
-					OutputStream o = soc.getOutputStream();
-					ObjectOutput s = new ObjectOutputStream(o);
-					File carpeta = new File("./carpetaCompartida");
-					Chunk test = new Chunk();
-					File archivo = null;
+				ListaIPs iplist = new ListaIPs();
 
-					if (!carpeta.exists()) {
+				File sharedFolder = new File("./folderSend");
 
-						carpeta.mkdirs();
-						System.out.println("se creo la carpeta compartida");
+				Chunk toSend = null;
 
-					} else {
-						System.out.println("la carpeta ya existe");
-					}
+				if (!sharedFolder.exists()) {
+					sharedFolder.mkdirs();
+					System.out.println("No shared folder detected, creating.....Done!");
 
-					String[] ficheros = carpeta.list();
-					String[] newFicheros;
-					for (int i = 0; i < ficheros.length; i++) {
-						System.out.println(ficheros[i]);
-					}
-					while (true) {
-						while (true) {
-							newFicheros = carpeta.list();
-							if (ficheros.length != newFicheros.length) {
-								break;
-							}
+				} else {
+					System.out.println("Shared folder /folderSend/ detected.");
+				}
+
+				String[] actualFileList = sharedFolder.list();
+				String[] newFileList;
+				System.out.println("Files in the shared folder:");
+				for (int i = 0; i < actualFileList.length; i++) {
+					System.out.println("> " + actualFileList[i]);
+				}
+
+				while (true) {
+					newFileList = sharedFolder.list();
+					if (actualFileList.length < newFileList.length) { // new file
+						System.out.println("Change detected in the folder......syncing");
+						ArrayList<String> unsyncedFiles = difference(actualFileList, newFileList);
+						System.out.println(unsyncedFiles.get(0));
+						Path path = Paths.get("./folderSend/" + unsyncedFiles.get(0));
+						byte[] data;
+						try {
+							data = Files.readAllBytes(path);
+							toSend = new Chunk();
+							toSend.setInfo(data);
+							toSend.setName(String.valueOf(unsyncedFiles.get(0)));
+							toSend.setId(0);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
-						System.out.println("salio del while");
-						ArrayList ficherosArr = new ArrayList();
-						ArrayList newFicherosArr = new ArrayList();
-						Collections.addAll(ficherosArr, ficheros);
-						Collections.addAll(newFicherosArr, newFicheros);
-						newFicherosArr.removeAll(ficherosArr);
-						System.out.println(newFicherosArr.get(0));
-						archivo = new File("./carpetaCompartida/" + newFicherosArr.get(0));
-						Path path = Paths.get("./carpetaCompartida/" + newFicherosArr.get(0));
-						byte[] data = Files.readAllBytes(path);
-						test.setInfo(data);
-						test.setNombre(String.valueOf(newFicherosArr.get(0)));
-						test.setId(0);
-						s.writeObject(test);
-						System.out.println("sended: "+newFicherosArr.get(0)+"\n");
 
-						s.flush();
-						// s.close();
-						ficheros = newFicheros;
+						for (String ip : iplist.getIplist()) {
+							new ClientThread(ip, port, toSend);
+						}
+
+						actualFileList = newFileList;
+						
+					} else if (actualFileList.length > newFileList.length) { // delete
+																		// file
+						System.out.println("Change detected in the folder......syncing");
+						ArrayList<String> unsyncedFiles = difference(newFileList, actualFileList);
+						System.out.println(unsyncedFiles.get(0));
+						toSend = new Chunk();
+						toSend.setName(String.valueOf(unsyncedFiles.get(0)));
+						toSend.setId(-1);
+
+						for (String ip : iplist.getIplist()) {
+							new ClientThread(ip, port, toSend);
+						}
+
+						actualFileList = newFileList;
 					}
-
-				} catch (Exception e) {
-					System.out.println(e.getMessage());
-					System.out.println("Error during serialization");
-					System.exit(1);
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
 		}).start();
 	}
 
-	private static void startServer() {
-
+	private static void startServer() throws IOException {
 		(new Thread() {
+
 			@Override
 			public void run() {
-
 				ServerSocket ser = null;
-				Socket soc = null;
-				Chunk d = null;
+				File sharedFolder = new File("./folderRec");
+				if (!sharedFolder.exists()) {
+					sharedFolder.mkdirs();
+					System.out.println("No shared folder detected, creating.....Done!");
 
+				} else {
+					System.out.println("Shared folder /folderRec/ detected.");
+				}
 				try {
-					ser = new ServerSocket(60020);
-					/*
-					 * This will wait for a connection to be made to this
-					 * socket.
-					 */
-						soc = ser.accept();
-
-						InputStream o = soc.getInputStream();
-						ObjectInput s = new ObjectInputStream(o);
-						d = (Chunk) s.readObject();
-						System.out.println("Recived: "+d.getNombre());
-						s.close();
-						File carpeta = new File("./carpetaRec");
-						if (!carpeta.exists()) {
-							carpeta.mkdirs();
-							System.out.println("se creo la carpeta compartida Rec");
-
-						} else {
-							System.out.println("la carpeta Rec ya existe");
-						}
-						FileOutputStream fos = new FileOutputStream("./carpetaRec/" + d.getNombre());
-						fos.write(d.getInfo());
-						fos.close();
-					
-				} catch (Exception e) {
-					System.out.println(e.getMessage());
-					System.out.println("Error during serialization");
+					ser = new ServerSocket(port);
+				} catch (IOException e) {
+					System.err.println("Could not listen on port: " + port + ".");
 					System.exit(1);
-
 				}
 
+				Socket clientSocket = null;
+				try {
+					while (true) {
+						clientSocket = ser.accept();
+						new ServerThread(clientSocket);
+					}
+				} catch (IOException e) {
+					System.err.println("Accept failed.");
+					System.exit(1);
+				}
+
+				try {
+					ser.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}).start();
 	}
