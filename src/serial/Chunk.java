@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 public class Chunk implements Serializable{
 	
 	private byte id;
-	private byte[] nombre;
+	private byte[] name;
 	private byte[] info;
 		
 	public Chunk() {
@@ -21,10 +21,10 @@ public class Chunk implements Serializable{
 		this.id = (byte) id;
 	}
 	public String getName() {
-		return new String(nombre, StandardCharsets.UTF_8);
+		return new String(name, StandardCharsets.UTF_8);
 	}
 	public void setName(String name) {
-		this.nombre = name.getBytes(StandardCharsets.UTF_8);
+		this.name = name.getBytes(StandardCharsets.UTF_8);
 	}
 	public byte[] getInfo() {
 		return info;

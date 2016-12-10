@@ -2,10 +2,6 @@ package serial;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -39,38 +35,38 @@ public class p2p {
 			public void run() {
 				ListaIPs iplist = new ListaIPs();
 
-				File carpeta = new File("./folderSend");
+				File sharedFolder = new File("./folderSend");
 
 				Chunk toSend = null;
 
-				if (!carpeta.exists()) {
-					carpeta.mkdirs();
+				if (!sharedFolder.exists()) {
+					sharedFolder.mkdirs();
 					System.out.println("No shared folder detected, creating.....Done!");
 
 				} else {
 					System.out.println("Shared folder /folderSend/ detected.");
 				}
 
-				String[] ficheros = carpeta.list();
-				String[] newFicheros;
+				String[] actualFileList = sharedFolder.list();
+				String[] newFileList;
 				System.out.println("Files in the shared folder:");
-				for (int i = 0; i < ficheros.length; i++) {
-					System.out.println("> " + ficheros[i]);
+				for (int i = 0; i < actualFileList.length; i++) {
+					System.out.println("> " + actualFileList[i]);
 				}
 
 				while (true) {
-					newFicheros = carpeta.list();
-					if (ficheros.length < newFicheros.length) { // new file
+					newFileList = sharedFolder.list();
+					if (actualFileList.length < newFileList.length) { // new file
 						System.out.println("Change detected in the folder......syncing");
-						ArrayList<String> newFicherosArr = difference(ficheros, newFicheros);
-						System.out.println(newFicherosArr.get(0));
-						Path path = Paths.get("./folderSend/" + newFicherosArr.get(0));
+						ArrayList<String> unsyncedFiles = difference(actualFileList, newFileList);
+						System.out.println(unsyncedFiles.get(0));
+						Path path = Paths.get("./folderSend/" + unsyncedFiles.get(0));
 						byte[] data;
 						try {
 							data = Files.readAllBytes(path);
 							toSend = new Chunk();
 							toSend.setInfo(data);
-							toSend.setName(String.valueOf(newFicherosArr.get(0)));
+							toSend.setName(String.valueOf(unsyncedFiles.get(0)));
 							toSend.setId(0);
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
@@ -81,21 +77,21 @@ public class p2p {
 							new ClientThread(ip, port, toSend);
 						}
 
-						ficheros = newFicheros;
-					} else if (ficheros.length > newFicheros.length) { // delete
+						actualFileList = newFileList;
+					} else if (actualFileList.length > newFileList.length) { // delete
 																		// file
 						System.out.println("Change detected in the folder......syncing");
-						ArrayList<String> newFicherosArr = difference(newFicheros, ficheros);
-						System.out.println(newFicherosArr.get(0));
+						ArrayList<String> unsyncedFiles = difference(newFileList, actualFileList);
+						System.out.println(unsyncedFiles.get(0));
 						toSend = new Chunk();
-						toSend.setName(String.valueOf(newFicherosArr.get(0)));
+						toSend.setName(String.valueOf(unsyncedFiles.get(0)));
 						toSend.setId(-1);
 
 						for (String ip : iplist.getIplist()) {
 							new ClientThread(ip, port, toSend);
 						}
 
-						ficheros = newFicheros;
+						actualFileList = newFileList;
 					}
 				}
 			}
@@ -108,9 +104,9 @@ public class p2p {
 			@Override
 			public void run() {
 				ServerSocket ser = null;
-				File carpeta = new File("./folderRec");
-				if (!carpeta.exists()) {
-					carpeta.mkdirs();
+				File sharedFolder = new File("./folderRec");
+				if (!sharedFolder.exists()) {
+					sharedFolder.mkdirs();
 					System.out.println("No shared folder detected, creating.....Done!");
 
 				} else {
