@@ -78,6 +78,7 @@ public class p2p {
 						}
 
 						actualFileList = newFileList;
+						
 					} else if (actualFileList.length > newFileList.length) { // delete
 																		// file
 						System.out.println("Change detected in the folder......syncing");
@@ -92,6 +93,12 @@ public class p2p {
 						}
 
 						actualFileList = newFileList;
+					}
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 				}
 			}
