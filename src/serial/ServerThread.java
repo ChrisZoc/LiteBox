@@ -32,7 +32,7 @@ public class ServerThread implements Runnable {
 				d = (Chunk) s.readObject();
 
 				if (d.getId() == -1) {
-					File toDelete = new File("./folderRec/" + d.getName());
+					File toDelete = new File(p2p.getSharedfolder() + "/" + d.getName());
 					if (toDelete.delete()) {
 						System.out.println(d.getName() + " has been deleted!");
 					} else {
@@ -40,7 +40,14 @@ public class ServerThread implements Runnable {
 					}
 				} else {
 					System.out.println("The file '" + d.getName() + "' has been Received ");
-					fos = new FileOutputStream("./folderRec/" + d.getName());
+					
+					String[] actualFileList = p2p.getActualFileList();
+					String[] updatedFileList = new String[actualFileList.length + 1];
+					System.arraycopy(actualFileList, 0, updatedFileList, 0, actualFileList.length);
+					updatedFileList[updatedFileList.length - 1] = d.getName();
+					p2p.setActualFileList(updatedFileList);
+					
+					fos = new FileOutputStream(p2p.getSharedfolder() + "/" + d.getName());
 					fos.write(d.getInfo());
 					fos.close();
 				}

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetAddress;
 import java.util.ArrayList;
 
 public class ListaIPs implements Serializable {
@@ -21,6 +22,10 @@ public class ListaIPs implements Serializable {
 			input = new BufferedReader(new FileReader(inputFile));
 			while (input.ready()) {
 				ip = input.readLine();
+				if (ip.compareTo("127.0.0.1") == 0)
+					continue;
+				if (ip.compareTo(InetAddress.getLocalHost().getHostAddress()) == 0)
+					continue;
 				iplist.add(ip);
 			}
 		} catch (IOException e) {
