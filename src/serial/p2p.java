@@ -34,7 +34,7 @@ public class p2p {
 			@Override
 			public void run() {
 				ListaIPs iplist = new ListaIPs();
-
+				boolean complete = true;
 				File sharedFolder = new File("./folderSend");
 
 				Chunk toSend = null;
@@ -62,6 +62,17 @@ public class p2p {
 						System.out.println(unsyncedFiles.get(0));
 						Path path = Paths.get("./folderSend/" + unsyncedFiles.get(0));
 						byte[] data;
+						File archivo=new File(String.valueOf(path));
+						do{	
+							System.out.println("the file is in pasting process....");
+							try {
+								complete=isCompletelyWritten(archivo);
+							
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}while(complete);
 						try {
 							data = Files.readAllBytes(path);
 							toSend = new Chunk();
@@ -71,8 +82,8 @@ public class p2p {
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						}
-
+						}	
+						
 						for (String ip : iplist.getIplist()) {
 							new ClientThread(ip, port, toSend);
 						}
@@ -87,7 +98,6 @@ public class p2p {
 						toSend = new Chunk();
 						toSend.setName(String.valueOf(unsyncedFiles.get(0)));
 						toSend.setId(-1);
-
 						for (String ip : iplist.getIplist()) {
 							new ClientThread(ip, port, toSend);
 						}
@@ -145,5 +155,14 @@ public class p2p {
 				}
 			}
 		}).start();
+	}
+	private static boolean isCompletelyWritten(File file) throws InterruptedException{
+	    Long fileSizeBefore = file.length();
+	    Thread.sleep(3000);
+	    Long fileSizeAfter = file.length();
+	    if (fileSizeBefore.equals(fileSizeAfter)) {
+	        return false;
+	    }
+	    return true;
 	}
 }
