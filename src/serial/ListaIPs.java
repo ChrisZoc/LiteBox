@@ -5,7 +5,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetAddress;
 import java.util.ArrayList;
+
+import javax.swing.JOptionPane;
 
 public class ListaIPs implements Serializable {
 
@@ -21,10 +24,17 @@ public class ListaIPs implements Serializable {
 			input = new BufferedReader(new FileReader(inputFile));
 			while (input.ready()) {
 				ip = input.readLine();
+				if (ip.compareTo("127.0.0.1") == 0)
+					continue;
+				if (ip.compareTo(InetAddress.getLocalHost().getHostAddress()) == 0)
+					continue;
 				iplist.add(ip);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "ERROR: Could not find 'iplist.txt'.", "ERROR",
+					JOptionPane.ERROR_MESSAGE);
+			System.exit(1);
 		} finally {
 			try {
 				if (input != null)
