@@ -4,19 +4,19 @@ import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 public class ClientThread implements Runnable {
 	Thread runner;
 	Socket soc;
 	Chunk toSend;
 
-	public ClientThread(String ip, int port, Chunk toSend) throws UnknownHostException {
+	public ClientThread(String ip, int port, Chunk toSend) throws ConnectException {
 		runner = new Thread(this);
 		try {
 			soc = new Socket(ip, port);
-		} catch (UnknownHostException e) {
+		} catch (ConnectException e) {
 			System.out.println("Host at " + ip + "is down.");
 			e.printStackTrace();
 			throw e;

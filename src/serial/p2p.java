@@ -3,9 +3,9 @@ package serial;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -87,7 +87,7 @@ public class p2p {
 					try {
 						new ClientThread(ip, port, toSend);
 						break;
-					} catch (UnknownHostException e1) {
+					} catch (ConnectException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
@@ -131,7 +131,7 @@ public class p2p {
 						for (String ip : iplist.getIplist()) {
 							try {
 								new ClientThread(ip, port, toSend);
-							} catch (UnknownHostException e) {
+							} catch (ConnectException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
@@ -147,7 +147,7 @@ public class p2p {
 						for (String ip : iplist.getIplist()) {
 							try {
 								new ClientThread(ip, port, toSend);
-							} catch (UnknownHostException e) {
+							} catch (ConnectException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
