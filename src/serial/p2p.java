@@ -19,6 +19,7 @@ public class p2p {
 	private static String[] actualFileList;
 	private static String[] newFileList;
 	private static boolean listRequiresUpdate;
+	private static File sharedFolder;
 
 	public static String getSharedfolder() {
 		return sharedfolder;
@@ -41,6 +42,14 @@ public class p2p {
 	}
 
 	public static void main(String args[]) throws IOException {
+		sharedFolder = new File(sharedfolder);
+		if (!sharedFolder.exists()) {
+			sharedFolder.mkdirs();
+			System.out.println("No shared folder detected, creating.....Done!");
+
+		} else {
+			System.out.println("Shared folder detected.");
+		}
 		startServer();
 		startClient();
 	}
@@ -61,17 +70,7 @@ public class p2p {
 			public void run() {
 				ListaIPs iplist = new ListaIPs();
 				boolean complete = true;
-				File sharedFolder = new File(sharedfolder);
-
 				Chunk toSend = null;
-
-				if (!sharedFolder.exists()) {
-					sharedFolder.mkdirs();
-					System.out.println("No shared folder detected, creating.....Done!");
-
-				} else {
-					System.out.println("Shared folder detected.");
-				}
 
 				actualFileList = sharedFolder.list();
 				System.out.println("Files in the shared folder:");
@@ -172,13 +171,6 @@ public class p2p {
 			@Override
 			public void run() {
 				ServerSocket ser = null;
-				File sharedFolder = new File(sharedfolder);
-				if (!sharedFolder.exists()) {
-					sharedFolder.mkdirs();
-					System.out.println("No shared folder detected, creating.....Done!");
-				} else {
-					System.out.println("Shared folder detected.");
-				}
 				try {
 					ser = new ServerSocket(port);
 				} catch (IOException e) {
