@@ -63,7 +63,11 @@ Edit the service file:
 - Replace $JAR_PATH with corresponding path for the runnable jar.
 
 Execute command in terminal to move the script at the services folder:
-`mv ./service /etc/init.d/liteP2Pbox` 
+`mv ./service /etc/init.d/liteP2Pbox`
+
+`cd /etc/init.d/`
+
+`chmod +x liteP2Pbox`
 
 Start app as service:
 `sudo service liteP2Pbox start`
