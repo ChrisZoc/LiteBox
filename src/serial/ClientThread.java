@@ -12,13 +12,14 @@ public class ClientThread implements Runnable {
 	Socket soc;
 	Chunk toSend;
 
-	public ClientThread(String ip, int port, Chunk toSend) {
+	public ClientThread(String ip, int port, Chunk toSend) throws UnknownHostException {
 		runner = new Thread(this);
 		try {
 			soc = new Socket(ip, port);
 		} catch (UnknownHostException e) {
 			System.out.println("Host at " + ip + "is down.");
 			e.printStackTrace();
+			throw e;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

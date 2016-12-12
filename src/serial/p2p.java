@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,19 +18,28 @@ public class p2p {
 	private static String sharedfolder = "./SharedFolder";
 	private static String[] actualFileList;
 	private static String[] newFileList;
-	
+	private static boolean listRequiresUpdate;
+
 	public static String getSharedfolder() {
 		return sharedfolder;
 	}
-	
+
 	public static String[] getActualFileList() {
 		return actualFileList;
 	}
-	
-	public static void setActualFileList(String[] actualFileList) {
-		p2p.actualFileList = actualFileList;
+
+	public static int getPort() {
+		return port;
 	}
-	
+
+	public static void setPort(int port) {
+		p2p.port = port;
+	}
+
+	public static void setListRequiresUpdate(boolean flag) {
+		p2p.listRequiresUpdate = flag;
+	}
+
 	public static void main(String args[]) throws IOException {
 		startServer();
 		startClient();
@@ -64,30 +74,49 @@ public class p2p {
 				}
 
 				actualFileList = sharedFolder.list();
-				
 				System.out.println("Files in the shared folder:");
-				for (int i = 0; i < actualFileList.length; i++) {
-					System.out.println("> " + actualFileList[i]);
+				for (String file : actualFileList) {
+					System.out.println("> " + file);
+				}
+
+				System.out.println("Syncing...");
+				toSend = new Chunk();
+				toSend.setId(-2); // startup sync
+				toSend.setName("");
+				toSend.setToSyncList(actualFileList);
+				for (String ip : iplist.getIplist()) {
+					try {
+						new ClientThread(ip, port, toSend);
+						break;
+					} catch (UnknownHostException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 
 				while (true) {
+					if (listRequiresUpdate) {
+						actualFileList = sharedFolder.list();
+						listRequiresUpdate = false;
+					}
 					newFileList = sharedFolder.list();
-					if (actualFileList.length < newFileList.length) { // new file
+					if (actualFileList.length < newFileList.length) { // new
+																		// file
 						System.out.println("Change detected in the folder, syncing...");
 						ArrayList<String> unsyncedFiles = difference(actualFileList, newFileList);
 						System.out.println(unsyncedFiles.get(0));
 						Path path = Paths.get(sharedfolder + "/" + unsyncedFiles.get(0));
 						byte[] data;
-						File archivo=new File(String.valueOf(path));
-						do{	
+						File archivo = new File(String.valueOf(path));
+						do {
 							System.out.println("File is being copied, waiting...");
 							try {
-								complete = isCompletelyWritten(archivo);							
+								complete = isCompletelyWritten(archivo);
 							} catch (InterruptedException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
-						}while(!complete);
+						} while (!complete);
 						System.out.println("File ready for transfer, syncing...");
 						try {
 							data = Files.readAllBytes(path);
@@ -98,13 +127,18 @@ public class p2p {
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						}	
-						
+						}
+
 						for (String ip : iplist.getIplist()) {
-							new ClientThread(ip, port, toSend);
-						}						
+							try {
+								new ClientThread(ip, port, toSend);
+							} catch (UnknownHostException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
 					} else if (actualFileList.length > newFileList.length) { // delete
-																		// file
+						// file
 						System.out.println("Change detected in the folder......syncing");
 						ArrayList<String> unsyncedFiles = difference(newFileList, actualFileList);
 						System.out.println(unsyncedFiles.get(0));
@@ -112,7 +146,12 @@ public class p2p {
 						toSend.setName(String.valueOf(unsyncedFiles.get(0)));
 						toSend.setId(-1);
 						for (String ip : iplist.getIplist()) {
-							new ClientThread(ip, port, toSend);
+							try {
+								new ClientThread(ip, port, toSend);
+							} catch (UnknownHostException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 					}
 					actualFileList = newFileList;
@@ -167,22 +206,23 @@ public class p2p {
 			}
 		}).start();
 	}
-	private static boolean isCompletelyWritten(File file) throws InterruptedException{
-		 RandomAccessFile stream = null;
-		    try {
-		        stream = new RandomAccessFile(file, "rw");
-		        return true;
-		    } catch (Exception e) {
-		    	Thread.sleep(1000);
-		    } finally {
-		        if (stream != null) {
-		            try {
-		                stream.close();
-		            } catch (IOException e) {
-		                System.out.println("Exception closing file " + file.getName());
-		            }
-		        }
-		    }
-		    return false;
+
+	public static boolean isCompletelyWritten(File file) throws InterruptedException {
+		RandomAccessFile stream = null;
+		try {
+			stream = new RandomAccessFile(file, "rw");
+			return true;
+		} catch (Exception e) {
+			Thread.sleep(1000);
+		} finally {
+			if (stream != null) {
+				try {
+					stream.close();
+				} catch (IOException e) {
+					System.out.println("Exception closing file " + file.getName());
+				}
+			}
+		}
+		return false;
 	}
 }
